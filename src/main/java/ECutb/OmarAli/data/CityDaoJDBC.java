@@ -12,18 +12,6 @@ import java.util.List;
 
 public class CityDaoJDBC implements CityDao {
 
-  private List<City> cityIdList;
-  private List<City> cityName;
-  private List<City> cityCode;
-  private List<City> cities;
-
-  public CityDaoJDBC() {
-    cityIdList = new ArrayList<>();
-    cityName = new ArrayList<>();
-    cityCode = new ArrayList<>();
-    cities = new ArrayList<>();
-  }
-
   private static final String INSERT =
       "INSERT INTO world.city (name, countryCode, district, population) VALUES(?,?,?,?)";
 
@@ -93,6 +81,7 @@ public class CityDaoJDBC implements CityDao {
 
   @Override
   public List<City> findByCode(String code) {
+    List<City> cityList = new ArrayList<>();
     Connection connection = null;
     PreparedStatement statement = null;
     ResultSet resultSet = null;
@@ -101,7 +90,7 @@ public class CityDaoJDBC implements CityDao {
       statement = create_findByCode(connection, code);
       resultSet = statement.executeQuery();
       while (resultSet.next()){
-        cityCode.add(
+        cityList.add(
             new City(
                 resultSet.getInt("ID"),
                 resultSet.getString("Name"),
@@ -128,7 +117,7 @@ public class CityDaoJDBC implements CityDao {
         e.printStackTrace();
       }
     }
-    return cityCode;
+    return cityList;
   }
   private PreparedStatement create_findByCode(Connection connection, String code) throws SQLException{
     PreparedStatement statement = connection.prepareStatement(FIND_BY_countryCODE);
@@ -138,6 +127,7 @@ public class CityDaoJDBC implements CityDao {
 
   @Override
   public List<City> findByName(String name) {
+    List<City> cityList = new ArrayList<>();
     Connection connection = null;
     PreparedStatement statement = null;
     ResultSet resultSet = null;
@@ -146,7 +136,7 @@ public class CityDaoJDBC implements CityDao {
       statement = create_findByName(connection, name);
       resultSet = statement.executeQuery();
       while (resultSet.next()){
-        cityName.add(
+        cityList.add(
             new City(   resultSet.getInt("ID"),
                 resultSet.getString("Name"),
                 resultSet.getString("CountryCode"),
@@ -172,7 +162,7 @@ public class CityDaoJDBC implements CityDao {
         e.printStackTrace();
       }
     }
-    return cityName;
+    return cityList;
   }
 
   private PreparedStatement create_findByName(Connection connection, String name) throws SQLException{
@@ -183,12 +173,16 @@ public class CityDaoJDBC implements CityDao {
 
   @Override
   public List<City> findAll() {
+    List<City> cityList = new ArrayList<>();
+    Connection connection = null;
+    PreparedStatement statement = null;
+    ResultSet resultSet = null;
     try {
-     Connection connection = getConnection();
-     PreparedStatement statement = connection.prepareStatement(FIND_BY_ALL);
-     ResultSet resultSet = statement.executeQuery();
+     connection = getConnection();
+     statement = connection.prepareStatement(FIND_BY_ALL);
+     resultSet = statement.executeQuery();
       while (resultSet.next()){
-        cities.add(
+        cityList.add(
             new City(
                 resultSet.getInt("ID"),
                 resultSet.getString("Name"),
@@ -200,11 +194,27 @@ public class CityDaoJDBC implements CityDao {
       }
     } catch (SQLException e) {
       e.printStackTrace();
+      }finally {
+        try {
+          if (resultSet != null){
+            resultSet.close();
+          }
+          if (statement != null){
+            statement.close();
+          }
+          if (connection != null){
+            connection.close();
+          }
+  
+    } catch (SQLException e) {
+        e.printStackTrace();
     }
-    return cities;
   }
+    return cityList;
 
-  @Override
+}
+
+      @Override
   public City add(City city) {
     Connection connection = null;
     PreparedStatement statement = null;
@@ -266,11 +276,12 @@ public class CityDaoJDBC implements CityDao {
 
   @Override
   public int delete(City city) {
+    int deletedRows = 0;
     try (Connection connection = getConnection();
         PreparedStatement statement = connection.prepareStatement(DELETE_CITY)
     ) {
       statement.setInt(1, city.getCityId());
-      statement.execute();
+      deletedRows = statement.executeUpdate();
 
     } catch (SQLException e) {
       e.printStackTrace();
@@ -278,7 +289,7 @@ public class CityDaoJDBC implements CityDao {
     if (findById(city.getCityId()) != null){
       return 0;
     }else {
-      return 1;
+      return deletedRows;
     }
   }
 }
